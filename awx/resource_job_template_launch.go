@@ -50,6 +50,16 @@ func resourceJobTemplateLaunch() *schema.Resource {
 				Required:    true,
 				Description: "Job template ID",
 				ForceNew:    true,
+			}, "limit": {
+				Type:        schema.TypeString,
+				Required:    false,
+				Description: "Host or group to operate",
+				ForceNew:    true,
+			}, "extra_vars": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "Host or group to operate",
+				ForceNew:    true,
 			},
 		},
 	}
@@ -65,7 +75,10 @@ func resourceJobTemplateLaunchCreate(ctx context.Context, d *schema.ResourceData
 		return buildDiagNotFoundFail("job template", jobTemplateID, err)
 	}
 
-	res, err := awxService.Launch(jobTemplateID, map[string]interface{}{}, map[string]string{})
+	res, err := awxService.Launch(jobTemplateID, map[string]interface{}{
+		"extra_vars": d.Get("extra_vars").(string),
+		"limit":      d.Get("limit").(string),
+	}, map[string]string{})
 	if err != nil {
 		log.Printf("Failed to create Template Launch %v", err)
 		diags = append(diags, diag.Diagnostic{
