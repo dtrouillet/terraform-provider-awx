@@ -52,7 +52,7 @@ func resourceJobTemplateLaunch() *schema.Resource {
 				ForceNew:    true,
 			}, "limit": {
 				Type:        schema.TypeString,
-				Required:    false,
+				Optional:    true,
 				Description: "Host or group to operate",
 				ForceNew:    true,
 			}, "extra_vars": {
