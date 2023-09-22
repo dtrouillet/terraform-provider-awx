@@ -1,0 +1,6 @@
+include:
+  template: Go.gitlab-ci.yml
+default:
+  before_script:
+    - cp /etc/gitlab-runner/certs/tls.crt /usr/local/share/ca-certificates/
+    - update-ca-certificates
