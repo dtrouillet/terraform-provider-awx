@@ -1,3 +1,10 @@
+variables:
+  https_proxy: http://relayprexo.serv.cdc.fr:8080
+  http_proxy: http://relayprexo.serv.cdc.fr:8080
+  no_proxy: gitlab.cks-bas.di.cdc.fr,*.cdc.fr,.cdc.fr
+  HTTPS_PROXY: http://relayprexo.serv.cdc.fr:8080
+  HTTP_PROXY: http://relayprexo.serv.cdc.fr:8080
+  NO_PROXY: gitlab.cks-bas.di.cdc.fr,*.cdc.fr,.cdc.fr
 include:
   template: Go.gitlab-ci.yml
 default:
