@@ -120,6 +120,8 @@ func resourceJobRead(ctx context.Context, d *schema.ResourceData, m interface{})
 
 		if job.Finished.IsZero() {
 			return retry.RetryableError(fmt.Errorf("Job is not finished"))
+		} else if job.Status == "failed" || job.Status == "error" || job.Status == "canceled" {
+			return retry.NonRetryableError(fmt.Errorf("Job %s is in error state : %s", d.Id(), job.Status))
 		}
 
 		return nil
