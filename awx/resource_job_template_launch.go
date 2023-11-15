@@ -30,12 +30,13 @@ package awx
 import (
 	"context"
 	"fmt"
-	"log"
-	"strconv"
-
 	awx "github.com/denouche/goawx/client"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"log"
+	"strconv"
+	"time"
 )
 
 func resourceJobTemplateLaunch() *schema.Resource {
@@ -89,13 +90,49 @@ func resourceJobTemplateLaunchCreate(ctx context.Context, d *schema.ResourceData
 		return diags
 	}
 
-	// return resourceJobRead(ctx, d, m)
 	d.SetId(strconv.Itoa(res.ID))
-	return diags
+	return resourceJobRead(ctx, d, m)
+	//return diags
 }
 
 func resourceJobRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
+	client := m.(*awx.AWX)
+	jobService := client.JobService
+	jobId, err := strconv.Atoi(d.Id())
+	if err != nil {
+		log.Printf("Failed to get JobID %v", err)
+		diags = append(diags, diag.Diagnostic{
+			Severity: diag.Error,
+			Summary:  "Failed to get JobID",
+			Detail:   fmt.Sprintf("Unable to get JobID %s : %s", d.Id(), err.Error()),
+		})
+		return diags
+	}
+
+	err = retry.RetryContext(ctx, d.Timeout(schema.TimeoutCreate)-time.Minute, func() *retry.RetryError {
+		job, err := jobService.GetJob(jobId, make(map[string]string))
+		if err != nil {
+			log.Printf("Failed to get Job %v", err)
+
+			return retry.NonRetryableError(fmt.Errorf("Unable to get Job %s : %s", d.Id(), err.Error()))
+		}
+
+		if job.Finished.IsZero() {
+			return retry.RetryableError(fmt.Errorf("Job is not finished"))
+		} else if job.Status == "failed" || job.Status == "error" || job.Status == "canceled" {
+			id := d.Id()
+			d.SetId("")
+			return retry.NonRetryableError(fmt.Errorf("Job %s is in error state : %s", id, job.Status))
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		diags = diag.FromErr(err)
+	}
+
 	return diags
 }
 
